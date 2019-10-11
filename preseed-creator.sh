@@ -133,7 +133,7 @@ label cpop
 	menu label ^Orange cPoP autoinstall
 	menu default
 	kernel /install.amd/vmlinuz
-	append vga=788 initrd=/install.amd/initrd.gz preseed/file=/preseed.cfg net.ifnames=0 biosdevname=0 debian-installer/language=en_US:en debian-installer/country=FR debian-installer/locale=en_US.UTF-8 netcfg/choose_interface=enp0s18 grub-installer/bootdev="/dev/sda" mirror/http/proxy="" --- quiet
+	append vga=788 initrd=/install.amd/initrd.gz preseed/file=/preseed.cfg net.ifnames=0 biosdevname=0 debian-installer/language=en_US:en debian-installer/country=FR debian-installer/locale=en_US.UTF-8 netcfg/choose_interface=eth0 grub-installer/bootdev="/dev/sda" mirror/http/proxy="" --- quiet
 EOF
 chmod -w menu.cfg
 cd ../../irmod
