@@ -117,7 +117,7 @@ fi
 echo "Change linux boot menu..."
 cd ../cd/isolinux
 chmod +w isolinux.cfg
-sed -i "s/timeout 0/timeout 3/g" ./isolinux.cfg
+sed -i "s/timeout 0/timeout 5/g" ./isolinux.cfg
 chmod -w isolinux.cfg
 
 chmod +w menu.cfg
@@ -133,7 +133,7 @@ label cpop
 	menu label ^Orange cPoP autoinstall
 	menu default
 	kernel /install.amd/vmlinuz
-	append vga=788 initrd=/install.amd/initrd.gz preseed/file=/preseed.cfg net.ifnames=0 biosdevname=0 debian-installer/language=en_US:en debian-installer/country=FR debian-installer/locale=en_US.UTF-8 netcfg/choose_interface=eth0 grub-installer/bootdev="/dev/sda" mirror/http/proxy="" --- quiet
+	append vga=788 initrd=/install.amd/initrd.gz preseed/file=/preseed.cfg grub-installer/bootdev="/dev/sda" --- quiet
 EOF
 chmod -w menu.cfg
 cd ../../irmod
