@@ -7,11 +7,9 @@ Preseed Creator
     Options:
         -i <image.iso>              ISO image to preseed. MANDATORY.
         -p <preseed_file.cfg>       Preseed file. MANDATORY.
-        -o <preseeded_image.iso>    Output preseeded ISO image. Default to "preseed_creator/debian-with-preseed.iso".
-        -r <root_key.pub>           Root SSH key to add to the initrd (this key will then be retrieved and copied to /root/.ssh/authorized_keys with a dedicated preseed late_command).
-        -a <ansible_key.pub>        Ansible SSH key to add to the initrd (this key will then be retrieved and copied to /home/ansible/.ssh/authorized_keys with a dedicated preseed late_command).
-        -x                          Use xorriso instead of genisoimage, to create an iso-hybrid.
-        -h                          Print this help and exit.
+        -o <preseeded_image.iso>    Output preseeded ISO image. Default to "preseed_creator/debian-with-preseed.iso"
+        -x                          Use xorriso instead of genisoimage, to create an iso-hybrid
+        -h                          Print this help and exit
 EOF
     exit
 }
@@ -21,7 +19,7 @@ PRESEED=""
 MYPWD=$(pwd)
 OUTPUT=""
 XORRISO=""
-while getopts ":i:o:p:r:a:xh" opt; do
+while getopts ":i:o:p:xgh" opt; do
     case $opt in
         i)
             INPUT=$OPTARG;;
@@ -29,10 +27,6 @@ while getopts ":i:o:p:r:a:xh" opt; do
             OUTPUT=$OPTARG;;
         p)
             PRESEED=$OPTARG;;
-        r)
-            ROOTSSHKEY=$OPTARG;;
-        a)
-            ANSIBLESSHKEY=$OPTARG;;
         x)
             XORRISO='yes';;
         h)
@@ -43,20 +37,21 @@ while getopts ":i:o:p:r:a:xh" opt; do
     esac
 done
 
-# test arguments consistency
+mkdir preseed_creator -p
+cd preseed_creator
 
-if [[ ! -z $PRESEED ]] # test if the $PRESEED string's size is not zero
+if [[ ! -z $PRESEED ]]
 then
     if [ ${PRESEED:0:1} != / ]
     then
         PRESEED="${MYPWD}/${PRESEED}"
     fi
-    if [[ ! -e $PRESEED ]] # test if the $PRESEED file exists
+    if [[ ! -e $PRESEED ]]
     then
         echo "$PRESEED does not exists. Aborting"
         exit 1
     fi
-    if [[ ! -r $PRESEED ]] # test if the $PRESEED file is readable
+    if [[ ! -r $PRESEED ]]
     then
         echo "$PRESEED is not readable. Aborting"
         exit 1
@@ -94,49 +89,6 @@ else
     fi
 fi
 
-if [[ -z $ROOTSSHKEY ]]
-then
-    echo "No SSH root key provided."
-else
-    if [ ${ROOTSSHKEY:0:1} != / ]
-    then
-        INPUT="${MYPWD}/${ROOTSSHKEY}"
-    fi
-    if [[ ! -e $ROOTSSHKEY ]]
-    then
-        echo "$ROOTSSHKEY does not exists. Aborting"
-        exit 1
-    fi
-    if [[ ! -r $ROOTSSHKEY ]]
-    then
-        echo "$ROOTSSHKEY is not readable. Aborting"
-        exit 1
-    fi
-fi
-
-if [[ -z $ANSIBLESSHKEY ]]
-then
-    echo "No SSH ansible key provided."
-else
-    if [ ${ANSIBLESSHKEY:0:1} != / ]
-    then
-        INPUT="${MYPWD}/${ANSIBLESSHKEY}"
-    fi
-    if [[ ! -e $ANSIBLESSHKEY ]]
-    then
-        echo "$ANSIBLESSHKEY does not exists. Aborting"
-        exit 1
-    fi
-    if [[ ! -r $ANSIBLESSHKEY ]]
-    then
-        echo "$ANSIBLESSHKEY is not readable. Aborting"
-        exit 1
-    fi
-fi
-
-mkdir preseed_creator -p
-cd preseed_creator
-
 echo "Mount ISO image..."
 mkdir loopdir -p
 mount -o loop $INPUT loopdir > /dev/null 2>&1
@@ -165,7 +117,7 @@ fi
 echo "Change linux boot menu..."
 cd ../cd/isolinux
 chmod +w isolinux.cfg
-sed -i "s/timeout 0/timeout 10/g" ./isolinux.cfg
+sed -i "s/timeout 0/timeout 3/g" ./isolinux.cfg
 chmod -w isolinux.cfg
 
 chmod +w menu.cfg
@@ -181,28 +133,13 @@ label cpop
 	menu label ^Orange cPoP autoinstall
 	menu default
 	kernel /install.amd/vmlinuz
-	append vga=788 initrd=/install.amd/initrd.gz preseed/file=/preseed.cfg grub-installer/bootdev="/dev/sda" --- quiet
+	append vga=788 initrd=/install.amd/initrd.gz preseed/file=/preseed.cfg net.ifnames=0 biosdevname=0 debian-installer/language=en_US:en debian-installer/country=FR debian-installer/locale=en_US.UTF-8 netcfg/choose_interface=eth0 grub-installer/bootdev="/dev/sda" mirror/http/proxy="" --- quiet
 EOF
 chmod -w menu.cfg
 cd ../../irmod
 
-echo "Add the preseed file to the initrd..."
+echo "Append the preseed file to the initrd and recompress the initrd..."
 cp $PRESEED preseed.cfg
-
-mkdir ./custom
-if [[ ! -z $ROOTSSHKEY ]]
-then
-    echo "Add the root SSH key to the initrd..."
-    cp $ROOTSSHKEY ./custom/root_key.pub
-fi
-
-if [[ ! -z $ANSIBLESSHKEY ]]
-then
-    echo "Add the ansible SSH key to the initrd..."
-    cp $ANSIBLESSHKEY ./custom/ansible_key.pub
-fi
-
-echo "Recompress the initrd..."
 find . | cpio -H newc --create 2>/dev/null | gzip -9 > ../cd/install.amd/initrd.gz 2>/dev/null
 if [ $? -ne 0 ]
 then
