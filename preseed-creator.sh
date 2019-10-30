@@ -190,6 +190,12 @@ echo "Add the preseed file to the initrd..."
 cp $PRESEED preseed.cfg
 
 mkdir ./custom
+
+echo "Add sudoer ansible nopasswd specifics..."
+cat << EOF > ./custom/ansible.sudoers
+ansible ALL=(ALL) NOPASSWD: ALL
+EOF
+
 if [[ ! -z $ROOTSSHKEY ]]
 then
     echo "Add the root SSH key to the initrd..."
