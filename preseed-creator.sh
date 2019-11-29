@@ -13,6 +13,7 @@ Preseed Creator
         -a <ansible_key.pub>        Ansible SSH key to add to the initrd (this key will then be retrieved and copied to /home/ansible/.ssh/authorized_keys with a dedicated preseed late_command).
         -x                          Use xorriso instead of genisoimage, to create an iso-hybrid.
         -h                          Print this help and exit.
+
 EOF
     exit
 }
