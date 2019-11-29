@@ -6,9 +6,10 @@ Preseed Creator
 ./preseed_creator.sh [options]
     Options:
         -i <image.iso>              ISO image to preseed. MANDATORY.
-        -p <preseed_file.cfg>       Preseed file. MANDATORY.
+        -f <preseed_file.cfg>       Preseed file. MANDATORY.
         -o <preseeded_image.iso>    Output preseeded ISO image. Default to "preseed_creator/debian-with-preseed.iso".
-        -r <root_key.pub>           Root SSH key to add to the initrd (this key will then be retrieved and copied to /root/.ssh/authorized_keys with a dedicated preseed late_command).
+        -r <pub_root_key.pub>       Root SSH public key to add to the initrd (this key will then be retrieved and copied to /root/.ssh/authorized_keys with a dedicated preseed late_command).
+        -p <pri_root_key.pub>       Root SSH private key to add to the initrd (this key will then be retrieved and copied to /root/.ssh/id_rsa with a dedicated preseed late_command).
         -a <ansible_key.pub>        Ansible SSH key to add to the initrd (this key will then be retrieved and copied to /home/ansible/.ssh/authorized_keys with a dedicated preseed late_command).
         -x                          Use xorriso instead of genisoimage, to create an iso-hybrid.
         -h                          Print this help and exit.
@@ -21,16 +22,18 @@ PRESEED=""
 MYPWD=$(pwd)
 OUTPUT=""
 XORRISO=""
-while getopts ":i:o:p:r:a:xh" opt; do
+while getopts ":i:o:f:r:p:a:xh" opt; do
     case $opt in
         i)
             INPUT=$OPTARG;;
         o)
             OUTPUT=$OPTARG;;
-        p)
+        f)
             PRESEED=$OPTARG;;
         r)
-            ROOTSSHKEY=$OPTARG;;
+            ROOTPUBSSHKEY=$OPTARG;;
+        p)
+            ROOTPRISSHKEY=$OPTARG;;
         a)
             ANSIBLESSHKEY=$OPTARG;;
         x)
@@ -94,22 +97,42 @@ else
     fi
 fi
 
-if [[ -z $ROOTSSHKEY ]]
+if [[ -z $ROOTPUBSSHKEY ]]
 then
-    echo "No SSH root key provided."
+    echo "No SSH root public key provided."
 else
-    if [ ${ROOTSSHKEY:0:1} != / ]
+    if [ ${ROOTPUBSSHKEY:0:1} != / ]
     then
-        INPUT="${MYPWD}/${ROOTSSHKEY}"
+        INPUT="${MYPWD}/${ROOTPUBSSHKEY}"
     fi
-    if [[ ! -e $ROOTSSHKEY ]]
+    if [[ ! -e $ROOTPUBSSHKEY ]]
     then
-        echo "$ROOTSSHKEY does not exists. Aborting"
+        echo "$ROOTPUBSSHKEY does not exists. Aborting"
         exit 1
     fi
-    if [[ ! -r $ROOTSSHKEY ]]
+    if [[ ! -r $ROOTPUBSSHKEY ]]
     then
-        echo "$ROOTSSHKEY is not readable. Aborting"
+        echo "$ROOTPUBSSHKEY is not readable. Aborting"
+        exit 1
+    fi
+fi
+
+if [[ -z $ROOTPRISSHKEY ]]
+then
+    echo "No SSH root private key provided."
+else
+    if [ ${ROOTPRISSHKEY:0:1} != / ]
+    then
+        INPUT="${MYPWD}/${ROOTPRISSHKEY}"
+    fi
+    if [[ ! -e $ROOTPRISSHKEY ]]
+    then
+        echo "$ROOTPRISSHKEY does not exists. Aborting"
+        exit 1
+    fi
+    if [[ ! -r $ROOTPRISSHKEY ]]
+    then
+        echo "$ROOTPRISSHKEY is not readable. Aborting"
         exit 1
     fi
 fi
@@ -196,10 +219,16 @@ cat << EOF > ./custom/ansible.sudoers
 ansible ALL=(ALL) NOPASSWD: ALL
 EOF
 
-if [[ ! -z $ROOTSSHKEY ]]
+if [[ ! -z $ROOTPUBSSHKEY ]]
 then
-    echo "Add the root SSH key to the initrd..."
-    cp $ROOTSSHKEY ./custom/root_key.pub
+    echo "Add the root SSH public key to the initrd..."
+    cp $ROOTPUBSSHKEY ./custom/root_pub_key.pub
+fi
+
+if [[ ! -z $ROOTPRISSHKEY ]]
+then
+    echo "Add the root SSH private key to the initrd..."
+    cp $ROOTPRISSHKEY ./custom/root_pri_key.pub
 fi
 
 if [[ ! -z $ANSIBLESSHKEY ]]
