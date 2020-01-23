@@ -10,7 +10,7 @@ This script is used to automate a Debian installation:
 ## Usage
 
 ```bash
-./preseed_creator.sh [options]
+./preseed-creator.sh [options]
     Options:
         -i <image.iso>              ISO image to preseed. MANDATORY.
         -f <preseed_file.cfg>       Preseed file. MANDATORY.
@@ -19,8 +19,9 @@ This script is used to automate a Debian installation:
         -p <pri_root_key.pub>       Root SSH private key to add to the initrd (this key will then be retrieved and copied to /root/.ssh/id_rsa with a dedicated preseed late_command).
         -a <ansible_key.pub>        Ansible SSH key to add to the initrd (this key will then be retrieved and copied to /home/ansible/.ssh/authorized_keys with a dedicated preseed late_command).
         -x                          Use xorriso instead of genisoimage, to create an iso-hybrid.
+        -n                          Do not unmount and cleanup temporary files (for debugging)
+        -d                          Debug mode
         -h                          Print this help and exit.
-
 
 $ sudo ./preseed-creator.sh -i debian-10.1.0-amd64-netinst.iso -o 192.168.10.35.iso -f preseed-192.168.10.35.cfg -r /root/.ssh/id_rsa.pub -p /root/.ssh/id_rsa -a /home/yann/.ssh/id_rsa.pub
 Mount ISO image...
@@ -56,4 +57,3 @@ With these setttings (keys included), the following login schemes are available:
   - ansible -> no password required if ssh issued with the expected ansible key
 * **sudo**:
   - ansible -> no password required for sudo
-
